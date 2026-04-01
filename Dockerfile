@@ -62,6 +62,9 @@ RUN git clone --depth 1 https://github.com/TrunkRecorder/trunk-recorder.git .
 COPY patches/simplestream-dangling-pointer.patch /tmp/
 RUN patch -p1 < /tmp/simplestream-dangling-pointer.patch
 
+# Enable simplestream plugin (commented out in upstream CMakeLists.txt)
+RUN sed -i 's|#add_subdirectory(plugins/simplestream)|add_subdirectory(plugins/simplestream)|' CMakeLists.txt
+
 # ---------------------------------------------------------------------------
 # Add user_plugins
 # ---------------------------------------------------------------------------
@@ -103,7 +106,7 @@ RUN apt-get update && apt-get -y upgrade && \
         libgnuradio-uhd3.10.9t64 libgnuradio-osmosdr0.2.0t64 \
         libsoapysdr0.8 soapysdr0.8-module-all \
         libairspyhf1 libfreesrp0 librtlsdr2 libxtrx0 \
-        libssl3t64 && \
+        libcurl4t64 libssl3t64 && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /newroot /
