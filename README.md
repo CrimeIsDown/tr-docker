@@ -1,9 +1,9 @@
 # tr-docker
 
-Pre-built [Trunk Recorder](https://github.com/TrunkRecorder/trunk-recorder) Docker image with all common plugins included. Drop in as a replacement for a manual trunk-recorder build.
+Pre-built [Trunk Recorder](https://github.com/TrunkRecorder/trunk-recorder) Docker image with all common plugins included. This repository publishes the `crimeisdown` forked image while still tracking upstream trunk-recorder for the core build.
 
 ```bash
-docker pull ghcr.io/trunk-reporter/trunk-recorder:latest
+docker pull ghcr.io/crimeisdown/trunk-recorder:latest
 ```
 
 ## Included Plugins
@@ -29,7 +29,7 @@ docker run -d \
   -v /var/run/dbus:/var/run/dbus \
   -v ./config.json:/app/config.json:ro \
   -v ./audio:/app/audio \
-  ghcr.io/trunk-reporter/trunk-recorder:latest
+  ghcr.io/crimeisdown/trunk-recorder:latest
 ```
 
 Mount your existing `config.json` — everything else is the same as a standard trunk-recorder setup.

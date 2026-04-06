@@ -15,7 +15,7 @@
 #   docker run -v ./config.json:/app/config.json \
 #              -v ./audio:/app/audio \
 #              --privileged --device /dev/bus/usb:/dev/bus/usb \
-#              ghcr.io/trunk-reporter/trunk-recorder:latest
+#              ghcr.io/crimeisdown/trunk-recorder:latest
 # =============================================================================
 
 FROM ubuntu:24.04 AS builder
@@ -25,20 +25,40 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get -y upgrade && \
     apt-get install --no-install-recommends -y \
         build-essential ca-certificates cmake curl git \
-        gnuradio-dev gr-osmosdr \
-        libosmosdr-dev libairspy-dev libairspyhf-dev libbladerf-dev \
+        gnuradio-dev \
+        libairspy-dev libairspyhf-dev \
         libboost-all-dev libcurl4-openssl-dev libfreesrp-dev \
         libgmp-dev libhackrf-dev libmirisdr-dev liborc-0.4-dev \
-        libpthread-stubs0-dev librtlsdr-dev libsndfile1-dev \
+        libpthread-stubs0-dev libsndfile1-dev \
         libsoapysdr-dev libssl-dev libuhd-dev \
         libusb-dev libusb-1.0-0-dev libxtrx-dev \
         pkg-config wget python3-six ffmpeg && \
     rm -rf /var/lib/apt/lists/*
 
 # ---------------------------------------------------------------------------
-# Paho MQTT (required by mqtt_status + mqtt_dvcf + mqtt_avcf)
+# Build librtlsdr + gr-osmosdr from source for newer SDR support
 # ---------------------------------------------------------------------------
 WORKDIR /deps
+
+RUN git clone https://github.com/steve-m/librtlsdr.git && \
+    cd librtlsdr && \
+    cmake -S . -B build && \
+    cmake --build build -j$(nproc) && \
+    cmake --install build && \
+    cmake --install build --prefix /newroot/usr/local && \
+    ldconfig
+
+RUN git clone https://github.com/osmocom/gr-osmosdr.git && \
+    cd gr-osmosdr && \
+    cmake -S . -B build -DENABLE_NONFREE=TRUE && \
+    cmake --build build -j$(nproc) && \
+    cmake --install build && \
+    cmake --install build --prefix /newroot/usr/local && \
+    ldconfig
+
+# ---------------------------------------------------------------------------
+# Paho MQTT (required by mqtt_status + mqtt_dvcf + mqtt_avcf)
+# ---------------------------------------------------------------------------
 
 RUN git clone --depth 1 --branch v1.3.13 https://github.com/eclipse/paho.mqtt.c.git && \
     cd paho.mqtt.c && \
@@ -58,9 +78,11 @@ RUN ldconfig
 WORKDIR /src
 RUN git clone --depth 1 https://github.com/TrunkRecorder/trunk-recorder.git .
 
-# Apply pending fix: simplestream dangling pointer (PR #1107)
+# Apply local patches carried by the crimeisdown fork
 COPY patches/simplestream-dangling-pointer.patch /tmp/
-RUN patch -p1 < /tmp/simplestream-dangling-pointer.patch
+COPY patches/multisite-system-name.patch /tmp/
+RUN patch -p1 < /tmp/simplestream-dangling-pointer.patch && \
+    patch -p1 < /tmp/multisite-system-name.patch
 
 # Enable simplestream plugin (commented out in upstream CMakeLists.txt)
 RUN sed -i 's|#add_subdirectory(plugins/simplestream)|add_subdirectory(plugins/simplestream)|' CMakeLists.txt
@@ -103,9 +125,9 @@ RUN apt-get update && apt-get -y upgrade && \
         libboost-log1.83.0 libboost-chrono1.83.0t64 \
         libgnuradio-digital3.10.9t64 libgnuradio-analog3.10.9t64 \
         libgnuradio-filter3.10.9t64 libgnuradio-network3.10.9t64 \
-        libgnuradio-uhd3.10.9t64 libgnuradio-osmosdr0.2.0t64 \
+        libgnuradio-uhd3.10.9t64 \
         libsoapysdr0.8 soapysdr0.8-module-all \
-        libairspyhf1 libfreesrp0 librtlsdr2 libxtrx0 \
+        libairspyhf1 libfreesrp0 libxtrx0 \
         libcurl4t64 libssl3t64 && \
     rm -rf /var/lib/apt/lists/*
 
@@ -120,7 +142,7 @@ RUN mkdir -p /etc/gnuradio/conf.d/ && \
 WORKDIR /app
 ENV HOME=/tmp
 
-LABEL org.opencontainers.image.source="https://github.com/trunk-reporter/tr-docker"
+LABEL org.opencontainers.image.source="https://github.com/crimeisdown/tr-docker"
 LABEL org.opencontainers.image.description="Trunk Recorder with mqtt_status, mqtt_dvcf, mqtt_avcf, symbolstream, simplestream, openmhz, broadcastify, unit_script"
 
 CMD ["trunk-recorder", "--config=/app/config.json"]

@@ -12,7 +12,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: trunk-reporter/trunk-recorder
+  IMAGE_NAME: crimeisdown/trunk-recorder
 
 jobs:
   build:
@@ -55,7 +55,7 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           labels: |
-            org.opencontainers.image.source=https://github.com/trunk-reporter/tr-docker
+            org.opencontainers.image.source=https://github.com/crimeisdown/tr-docker
           outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=${{ github.event_name != 'pull_request' }}
           cache-from: type=gha,scope=${{ steps.slug.outputs.pair }}
           cache-to: type=gha,mode=max,scope=${{ steps.slug.outputs.pair }}
