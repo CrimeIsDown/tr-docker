@@ -79,13 +79,8 @@ WORKDIR /src
 RUN git clone --depth 1 https://github.com/TrunkRecorder/trunk-recorder.git .
 
 # Apply local patches carried by the crimeisdown fork
-COPY patches/simplestream-dangling-pointer.patch /tmp/
 COPY patches/multisite-system-name.patch /tmp/
-RUN patch -p1 < /tmp/simplestream-dangling-pointer.patch && \
-    patch -p1 < /tmp/multisite-system-name.patch
-
-# Enable simplestream plugin (commented out in upstream CMakeLists.txt)
-RUN sed -i 's|#add_subdirectory(plugins/simplestream)|add_subdirectory(plugins/simplestream)|' CMakeLists.txt
+RUN patch -p1 < /tmp/multisite-system-name.patch
 
 # ---------------------------------------------------------------------------
 # Add user_plugins
